@@ -191,7 +191,7 @@ async def get_users_by_reminder_day(day: int):
         """, (day,)) as cursor:
             return await cursor.fetchall()
         
-    async def delete_last_expense(family_id: int) -> bool:
+async def delete_last_expense(family_id: int) -> bool:
     
      async with aiosqlite.connect(DB_NAME) as db:
         # Сначала находим ID последней записи для этой семьи
