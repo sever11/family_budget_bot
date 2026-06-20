@@ -3,7 +3,8 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from core.database import add_expense
+from aiogram.filters import Command
+from core.database import add_expense, delete_last_expense, get_user
 
 from keyboards.inline import (
     get_main_categories_kb, 
@@ -137,3 +138,22 @@ async def back_to_main_menu(callback: CallbackQuery):
 async def cancel_expense(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text("❌ Ввод расхода отменен.")
+
+    from core.database import delete_last_expense, get_user # Убедись, что импорты есть
+
+@router.message(Command("delete_last"))
+async def cmd_delete_last(message: Message):
+    user = await get_user(message.from_user.id)
+    if not user:
+        await message.answer("Вы не зарегистрированы в системе.")
+        return
+        
+    family_id = user[1]
+    
+    # Удаляем запись
+    success = await delete_last_expense(family_id)
+    
+    if success:
+        await message.answer("❌ **Последний внесенный расход успешно удален!**\nБаланс и лимиты пересчитаны.")
+    else:
+        await message.answer("У вашей семьи пока нет внесенных расходов, удалять нечего.")

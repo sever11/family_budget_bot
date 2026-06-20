@@ -190,3 +190,22 @@ async def get_users_by_reminder_day(day: int):
             WHERE f.reminder_day = ?
         """, (day,)) as cursor:
             return await cursor.fetchall()
+        
+    async def delete_last_expense(family_id: int) -> bool:
+    
+     async with aiosqlite.connect(DB_NAME) as db:
+        # Сначала находим ID последней записи для этой семьи
+        async with db.execute("""
+            SELECT id FROM expenses 
+            WHERE family_id = ? 
+            ORDER BY timestamp DESC LIMIT 1
+        """, (family_id,)) as cursor:
+            row = await cursor.fetchone()
+            
+        if row:
+            expense_id = row[0]
+            # Удаляем этот расход
+            await db.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+            await db.commit()
+            return True
+        return False
