@@ -3,8 +3,9 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from core.database import add_expense
 from aiogram.filters import Command
-from core.database import add_expense, delete_last_expense, get_user
+from core.database import delete_last_expense, get_user
 
 from keyboards.inline import (
     get_main_categories_kb, 
