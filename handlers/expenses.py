@@ -53,38 +53,37 @@ async def parse_expense(message: Message, state: FSMContext):
 # --- 2. ОБРАБОТКА НАЖАТИЯ НА ОБЫЧНУЮ КАТЕГОРИЮ ---
 @router.callback_query(CategoryCB.filter(), ExpenseFSM.waiting_for_category)
 async def process_main_category(callback: CallbackQuery, callback_data: CategoryCB, state: FSMContext):
-    # Достаем сохраненные сумму и комментарий
+    # 1. Говорим Телеграму "мы приняли нажатие", чтобы убрать часики загрузки!
+    await callback.answer()
+
+    # 2. Достаем сохраненные сумму и комментарий
     data = await state.get_data()
     amount = data.get("amount")
     comment = data.get("comment")
     category = callback_data.name
 
-    # --- 2. ОБРАБОТКА НАЖАТИЯ НА ОБЫЧНУЮ КАТЕГОРИЮ ---
-@router.callback_query(CategoryCB.filter(), ExpenseFSM.waiting_for_category)
-async def process_main_category(callback: CallbackQuery, callback_data: CategoryCB, state: FSMContext):
-    # Достаем сохраненные сумму и комментарий
-    data = await state.get_data()
-    amount = data.get("amount")
-    comment = data.get("comment")
-    category = callback_data.name
+    # 3. Находим ID семьи
+    user = await get_user(callback.from_user.id)
+    if not user:
+        await callback.message.edit_text("Ошибка: вы не зарегистрированы.")
+        return
+    family_id = user[1]
 
-    # TODO: Здесь будет код записи в базу данных SQL
+    # 4. ЗАПИСЫВАЕМ В БАЗУ ДАННЫХ (вместо TODO)
+    # Если функция add_expense не принимает комментарий, просто удалите его из скобок
+    await add_expense(family_id, callback.from_user.id, amount, category)
 
+    # 5. Отвечаем пользователю
     await callback.message.edit_text(
         f"✅ Успешно записано!\n"
         f"**Сумма:** {amount} руб.\n"
         f"**Категория:** {category}\n"
-        f"**Заметка:** {comment if comment else '—'}",
+        f"**Заметка:** {comment if comment else '-'}",
         parse_mode="Markdown"
     )
-    # Очищаем состояние
+    
+    # 6. Очищаем состояние
     await state.clear()
-
-
-# --- 3. НАЖАТИЕ НА "РЕБЕНОК" (ОТКРЫТИЕ ПОДМЕНЮ) ---
-@router.callback_query(ActionCB.filter(F.action == "child_menu"), ExpenseFSM.waiting_for_category)
-async def open_child_menu(callback: CallbackQuery):
-    await callback.message.edit_reply_markup(reply_markup=get_child_categories_kb())
 
 
 # --- 4. НАЖАТИЕ НА ПОДКАТЕГОРИЮ РЕБЕНКА ---
