@@ -28,6 +28,7 @@ async def init_db():
         await db.execute("""
             CREATE TABLE IF NOT EXISTS expenses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                family_id INTEGER,
                 user_id INTEGER,
                 amount REAL NOT NULL,
                 category TEXT NOT NULL,
@@ -87,11 +88,11 @@ async def join_family(tg_id: int, invite_code: str, role: str):
             await db.commit()
             return True
 
-async def add_expense(user_id: int, amount: float, category: str, subcategory: str = None, comment: str = None):
+async def add_expense(family_id: int, user_id: int, amount: float, category: str, subcategory: str = None, comment: str = None):
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute(
-            "INSERT INTO expenses (user_id, amount, category, subcategory, comment) VALUES (?, ?, ?, ?, ?)",
-            (user_id, amount, category, subcategory, comment)
+            "INSERT INTO expenses (family_id, user_id, amount, category, subcategory, comment) VALUES (?, ?, ?, ?, ?, ?)",
+            (family_id, user_id, amount, category, subcategory, comment)
         )
         await db.commit()
 
@@ -192,19 +193,17 @@ async def get_users_by_reminder_day(day: int):
             return await cursor.fetchall()
         
 async def delete_last_expense(family_id: int) -> bool:
-    
-     async with aiosqlite.connect(DB_NAME) as db:
-        # Сначала находим ID последней записи для этой семьи
+    async with aiosqlite.connect(DB_NAME) as db:
+        # Ищем по family_id и сортируем по правильной колонке created_at
         async with db.execute("""
             SELECT id FROM expenses 
             WHERE family_id = ? 
-            ORDER BY timestamp DESC LIMIT 1
+            ORDER BY created_at DESC LIMIT 1
         """, (family_id,)) as cursor:
             row = await cursor.fetchone()
             
         if row:
             expense_id = row[0]
-            # Удаляем этот расход
             await db.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
             await db.commit()
             return True
