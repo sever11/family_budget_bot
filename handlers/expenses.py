@@ -153,6 +153,13 @@ async def cmd_delete_last(message: Message):
         return
         
     family_id = user[1]
+
+    keyboard = await get_main_categories_kb(family_id)
+
+    await message.answer(
+        f"💰 Сумма: {amount} руб.\n📝 Заметка: {comment if comment else '-'}\n\nВыберите категорию:", 
+        reply_markup=keyboard
+    )
     
     # Удаляем запись
     success = await delete_last_expense(family_id)
