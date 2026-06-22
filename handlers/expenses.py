@@ -129,17 +129,21 @@ async def process_main_category(callback: CallbackQuery, callback_data: Category
     await state.clear()
 
 
-# --- 5. КНОПКИ УПРАВЛЕНИЯ (ОТМЕНА И НАЗАД) ---
-@router.callback_query(ActionCB.filter(F.action == "back_to_main"), ExpenseFSM.waiting_for_category)
-async def back_to_main_menu(callback: CallbackQuery):
-    await callback.message.edit_reply_markup(reply_markup=get_main_categories_kb())
-
-@router.callback_query(ActionCB.filter(F.action == "cancel"))
+@router.callback_query(ActionCB.filter(F.action == "cancel")) # Твой фильтр кнопки Отмена
 async def cancel_expense(callback: CallbackQuery, state: FSMContext):
+    # 1. Сбрасываем состояние FSM (чтобы бот не ждал категорию)
     await state.clear()
-    await callback.message.edit_text("❌ Ввод расхода отменен.")
+    
+    # 2. 🧹 Просто УДАЛЯЕМ сообщение с кнопками. Чат чист!
+    try:
+        await callback.message.delete()
+    except Exception:
+        # На всякий случай, если сообщение уже удалено, отвечаем Телеграму
+        await callback.answer("Ввод отменен.")
+        
+    # 3. Обязательно гасим часики загрузки на кнопке
+    await callback.answer()
 
-    from core.database import delete_last_expense, get_user # Убедись, что импорты есть
 
 @router.message(Command("delete_last"))
 async def cmd_delete_last(message: Message):
